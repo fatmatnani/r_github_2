@@ -1,0 +1,180 @@
+---
+title: "artists_quarto"
+author: "Fatma TNANI"
+format: html
+---
+
+
+
+## Introduction
+
+This Quarto document analyzes the artists dataset from the TidyTuesday GitHub repository. The dataset contains information about artists' demographics and metrics describing their representation in art history textbooks.
+## Data Source
+Original data set download source: Tidy Tuesday GitHub repo.
+## Setup
+First, we'll load the required libraries and import the data.
+
+```{r}
+# Load required libraries
+library(tidyverse)
+library(ggthemes)
+library(ggplot2)
+
+# Import data
+artists <- read_csv("artists.csv")
+```
+
+## Data Wrangling
+
+### Selecting Specific Columns
+
+We'll start by selecting specific columns from the dataset.
+```{r}
+artists_selected <- artists |> 
+  select(artist_name, year, artist_nationality, artist_gender, space_ratio_per_page_total)
+head(artists_selected)
+```
+This step allows us to focus on the most relevant variables for our analysis.
+### Calculating Average Space Ratio
+Next, we'll calculate the average space ratio per page total for each year.
+
+```{r}
+artists_mutated <- artists_selected |>  
+  group_by(year) |> 
+  mutate(average_space_ratio = mean(space_ratio_per_page_total, na.rm = TRUE))
+
+head(artists_mutated)
+```
+
+This calculation helps us understand how representation changes over time.
+
+### Filtering for American Artists
+
+We'll create a subset of the data containing only American artists.
+```{r}
+artists_filtered <- artists_mutated |>  
+  filter(artist_nationality == "American")
+head(artists_filtered)
+```
+This allows us to focus on trends specific to American artists.
+### Summarizing Data
+Let's create summary statistics for our filtered dataset.
+
+```{r}
+artists_summary <- artists_filtered |>  
+  summarize(average_space_ratio = mean(space_ratio_per_page_total, na.rm = TRUE))
+
+artists_summary
+```
+
+This gives us an overall picture of the representation of American artists. \
+
+### Grouping by Nationality 
+
+Now, we'll group the data by nationality and calculate summary statistics.
+```{r}
+artists_grouped <- artists_selected |>  
+  group_by(artist_nationality) |>  
+  summarize(
+    average_space_ratio = mean(space_ratio_per_page_total, na.rm = TRUE),
+    count = n()
+  )
+head(artists_grouped)
+```
+This allows us to compare representation across different nationalities. \
+### Sorting Data 
+We'll sort the grouped data by average space ratio in descending order.
+
+```{r}
+artists_arranged <- artists_grouped |> 
+  arrange(desc(average_space_ratio))
+
+head(artists_arranged)
+```
+
+This helps us identify which nationalities have the highest representation in the textbooks. \
+
+### Creating a Clean Dataset 
+
+Let's combine all our transformations into a single, clean dataset.
+```{r}
+artists_clean <- artists |>  
+  select(artist_name, year, artist_nationality, artist_gender, space_ratio_per_page_total) |>  
+  group_by(artist_nationality) |>  
+  summarize(
+    average_space_ratio = mean(space_ratio_per_page_total, na.rm = TRUE),
+    count = n()
+  ) |>  
+  arrange(desc(average_space_ratio))
+head(artists_clean)
+```
+This clean dataset will be useful for our visualizations and further analysis. \
+### Counting American Artists by Nationality 
+Let's create a summary of American artists by specific nationality.
+
+```{r}
+artists_summary2 <- artists |>  
+  filter(str_detect(artist_nationality, "American")) |> 
+  group_by(artist_nationality) |>  
+  count() |>  
+  arrange(desc(n))
+
+artists_summary2
+```
+
+This summary helps us understand the diversity within the "American" category. \
+
+## Data Visualization \
+
+### Bar Chart: Count of American Artists by Nationality 
+
+Let's create a bar chart to visualize the count of American artists by nationality.
+```{r}
+ggplot(data = artists_summary2, aes(x = n, y = fct_reorder(artist_nationality, n), fill = artist_nationality)) +
+  geom_col(position = "dodge") +
+  geom_text(aes(label = n), hjust = -0.2, size = 3.5) +
+  labs(
+    title = "Count of American Artists by Nationality",
+    subtitle = "Analysis based on the artists dataset",
+    caption = "Source: https://github.com/rfordatascience/tidytuesday/blob/master/data/2023/2023-01-17/artists.csv",
+    x = "Count",
+    y = "Nationality",
+    fill = "Nationality"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+ggsave("bar_chart_artists_summary2.png", width = 10, height = 14)
+```
+This chart provides a visual representation of the diversity among American artists in the dataset. \
+### Scatterplot: Space Ratio Over Time 
+Let's create a scatterplot to visualize how the space ratio changes over time, colored by artist gender.
+
+```{r}
+scatterplot <- ggplot(artists, aes(x = year, y = space_ratio_per_page_total, color = artist_gender)) +
+  geom_point(alpha = 0.6) +
+  scale_color_brewer(palette = "Set1") +
+  scale_x_continuous(limits = c(1900, 2020), breaks = seq(1900, 2020, 20)) +
+  scale_y_continuous(limits = c(0, 0.5), breaks = seq(0, 0.5, 0.1)) +
+  labs(
+    title = "Artists' Space Ratio Per Page Over Years",
+    subtitle = "Colored by Gender",
+    x = "Year",
+    y = "Space Ratio Per Page Total",
+    color = "Gender"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(face = "bold"),
+    axis.title = element_text(face = "italic")
+  )
+
+print(scatterplot)
+ggsave("scatterplot_artists.png", plot = scatterplot, width = 12, height = 8, dpi = 300)
+```
+
+This scatterplot allows us to observe trends in artist representation over time, with a focus on gender differences. 
+
+## Conclusion 
+
+In this analysis, we explored the artists dataset, focusing on representation in art history textbooks. We performed various data wrangling operations to clean and summarize the data, and created visualizations to better understand trends in artist representation over time and across nationalities.
