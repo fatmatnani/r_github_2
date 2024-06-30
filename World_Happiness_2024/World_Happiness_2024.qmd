@@ -1,0 +1,54 @@
+---
+title: "world_happiness report 2024"
+author: "Fatma TNANI"
+format: html
+---
+
+## Loading Libraries and Data
+First, let's load the necessary libraries and import the dataset
+```{r}
+#| message: false
+library(tidyverse)
+library(readr)
+
+# reading the csv file
+happiness_data <- read.csv("World-happiness-report-updated_2024.csv")
+
+# Dis^play the first few rows and structure of the data
+head(happiness_data)
+str(happiness_data)
+```
+## Examining the Data
+
+Let's check if our data adheres to tidy data principles:
+
+1-Each variable forms a column
+
+2-Each observation forms a row
+
+3-Each type of observational unit forms a table
+
+```{r}
+# check for any missing values
+colSums(is.na(happiness_data))
+
+# check the number of unique countries and years
+n_distinct(happiness_data$'Country name')
+n_distinct(happiness_data$year)
+```
+
+## Tidying the Data
+
+Our data seems to be mostly tidy, but we can make a few improvements:
+
+Rename columns to remove spaces and make them more R-friendly
+
+Separate the "Dystopia + residual" column into two columns
+
+Create separate columns for positive and negative affects if they're combined
+
+```{r}
+tidy_happiness <- happiness_data |> 
+  #Ren  
+```
+

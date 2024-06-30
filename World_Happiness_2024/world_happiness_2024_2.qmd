@@ -1,0 +1,201 @@
+---
+title: "World_Happiness_2024_2"
+author: "Fatma TNANI"
+date: "2024-06-29"
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+    df-print: paged
+    execute:
+      echo: true
+      warning: false
+
+---
+
+
+```{r}
+# Load necessary libraries
+library(tidyverse)
+library(viridis)
+library(ggrepel)
+library(maps)
+library(gganimate)
+library(skimr) 
+library(plotly)
+
+
+```
+
+
+# Introduction
+
+This document analyzes the World Happiness Report data. We will explore the data, perform various visualizations, and create animations to understand global happiness trends over the years.
+
+# Load Necessary Libraries
+
+We start by loading the necessary libraries. These libraries are used for data manipulation, visualization, and creating animations. FOr some visualizations mostly the animated ones i did like examples.
+
+# Load the Data
+
+We load the data from the CSV files into data frames and display the first few rows of each dataset to understand their structure.
+
+
+
+
+
+```{r}
+
+# Import data
+df1 <- read_csv(here::here("World-happiness-report-updated_2024.csv"))
+df2 <- read_csv(here::here("World-happiness-report-2024.csv"))
+
+# Display the first few rows of each dataset
+head(df1)
+head(df2)
+
+
+# Join the datasets
+df <- bind_rows(df1, df2)
+
+# Display the first few rows of the joined dataset
+head(df)
+
+
+```
+# Data Preprocessing
+
+In this step, we perform basic data preprocessing such as summarizing the data, checking for missing values, and filling missing values in numeric columns with the mean.
+
+```{r}
+# Describe statistics 
+skim(df)
+
+# Count missing values
+sapply(df, function(x) sum(is.na(x)))
+
+# Fill missing values in numeric columns
+df <- df |> mutate(across(where(is.numeric), ~ ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+
+
+```
+# Exploratory Data Analysis (EDA)
+
+We explore the data by visualizing various metrics. This helps us understand the distribution and relationships within the data.
+```{r}
+#Unique countries in 2024 data
+unique(df$'Country name')
+
+```
+
+# Distribution of key Metrics
+We visualize the distribution of various metrics using boxplots
+```{r}
+# Distribution of Social support, Freedom to make life choices, Generosity, Perceptions of corruption
+list_features <- c('Social support', 'Freedom to make life choices', 'Generosity', 'Perceptions of corruption')
+ggplot(gather(df[, list_features]), aes(x = value, y = key, fill = key)) +
+  geom_boxplot() +
+  theme_minimal() +
+  scale_fill_viridis_d() +
+  labs(title = "Distribution of Social Support , Freedom to make Life Choices, Generosity, and Perception of Corruption")
+```
+
+
+# Happiest and Unhappiest Countries
+We identify and visualize the happiest and unhappiest countries based on the Ladder score.
+
+```{r}
+# Filter the data
+df_happiest <- df |> 
+  filter(`Ladder score` > 7.4 | `Ladder score` < 3.5)
+
+# Create the plot
+ggplot(df_happiest, aes(x = `Ladder score`, y = fct_reorder(`Country name`, `Ladder score`), fill = `Ladder score`)) +
+  geom_col() +
+  scale_fill_viridis_c() +
+  theme_minimal() +
+  labs(title = "Happiest and Unhappiest Countries",
+       x = "Ladder Score",
+       y = "Country")
+  
+```
+# Ladder Score Distribution by Regional Indicator
+We visualize the distribution of the Ladder score by regional indicator using density plots.
+```{r}
+ggplot(df, aes(x = `Ladder score`, fill = `Regional indicator`)) + 
+  geom_density(alpha = 0.6) +
+  geom_vline(aes(xintercept = mean(`Ladder score`)), color = "black", linetype = "dashed") +
+  scale_fill_viridis_d() +
+  theme_minimal() +
+  labs(title = "Ladder Score DIstribution by Regional Indicator",
+       x = "Ladder Score",
+       y = "Density")
+```
+# Interactive Generosity Comparison by Countries
+We create an interactive choropleth map to compare generosity by countries over different years.
+```{r}
+# I did these verification steps because i faced many errors
+# Check for any non-UTF-8 characters 
+problematic_rows <- which(!stringi::stri_enc_isutf8(df$`Country name`))
+print(df$`Country name`[problematic_rows])
+
+# Try to convert problematic characters to UTF-8
+df$`Country name` <- iconv(df$`Country name`, to = "UTF-8", sub = "")
+
+
+# create the plot 
+fig <- plot_ly(df, 
+               locations = ~`Country name`, 
+               z = ~Generosity, 
+               type = 'choropleth', 
+               frame = ~year,
+               locationmode = 'country names', 
+               colorscale = "Viridis",
+               text = ~paste('Year:', year, '<br>Generosity:', Generosity)) |> 
+  layout(title = 'Generosity Comparison by Countries',
+         geo = list(showframe = FALSE,
+                    showcoastlines = FALSE,
+                    projection = list(type = 'Mercator')))
+
+fig
+
+
+
+```
+# Interactive  Ladder score per year by Countries
+We create an interactive choropleth map to compare Ladder score by countries over different years.
+
+```{r}
+
+# Check for any non-UTF-8 characters 
+problematic_rows <- which(!stringi::stri_enc_isutf8(df$`Country name`))
+print(df$`Country name`[problematic_rows])
+
+# Try to convert problematic characters to UTF-8
+df$`Country name` <- iconv(df$`Country name`, to = "UTF-8", sub = "")
+
+
+
+# Interactive Ladder Score Comparison by Countries
+fig <- plot_ly(df, 
+               locations = ~`Country name`, 
+               z = ~`Ladder score`, 
+               type = 'choropleth', 
+               frame = ~year,
+               locationmode = 'country names', 
+               colorscale = "Viridis",
+               text = ~paste('Year:', year, '<br>Ladder score:', `Ladder score`)) |> 
+  layout(title = 'Ladder Score Comparison by Countries',
+         geo = list(showframe = FALSE,
+                    showcoastlines = FALSE,
+                    projection = list(type = 'Mercator')))
+
+fig
+
+```
+
+
+
