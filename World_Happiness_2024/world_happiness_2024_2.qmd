@@ -100,7 +100,8 @@ ggplot(gather(df[, list_features]), aes(x = value, y = key, fill = key)) +
   geom_boxplot() +
   theme_minimal() +
   scale_fill_viridis_d() +
-  labs(title = "Distribution of Social Support , Freedom to make Life Choices, Generosity, and Perception of Corruption")
+  labs(title = str_wrap("Distribution of Social Support , Freedom to make Life Choices, Generosity, and Perception of Corruption", 60)) + # Libby wrapped this
+  theme(legend.position = "none") # Libby's change
 ```
 
 
